@@ -1,0 +1,10 @@
+c:\users\shen\documents\visual studio 2012\Projects\決行小程式\決行小程式\bin\Debug\決行小程式.exe.config
+c:\users\shen\documents\visual studio 2012\Projects\決行小程式\決行小程式\obj\Debug\決行小程式.csprojResolveAssemblyReference.cache
+c:\users\shen\documents\visual studio 2012\Projects\決行小程式\決行小程式\obj\Debug\決行小程式.Form1.resources
+c:\users\shen\documents\visual studio 2012\Projects\決行小程式\決行小程式\obj\Debug\決行小程式.Properties.Resources.resources
+c:\users\shen\documents\visual studio 2012\Projects\決行小程式\決行小程式\obj\Debug\決行小程式.csproj.GenerateResource.Cache
+c:\users\shen\documents\visual studio 2012\Projects\決行小程式\決行小程式\obj\Debug\決行小程式.exe
+c:\users\shen\documents\visual studio 2012\Projects\決行小程式\決行小程式\obj\Debug\決行小程式.pdb
+C:\Users\shen\Documents\Visual Studio 2012\Projects\Routine-Killer\決行小程式\決行小程式\bin\Debug\決行小程式.exe.config
+C:\Users\shen\Documents\Visual Studio 2012\Projects\Routine-Killer\決行小程式\決行小程式\obj\Debug\決行小程式.exe
+C:\Users\shen\Documents\Visual Studio 2012\Projects\Routine-Killer\決行小程式\決行小程式\obj\Debug\決行小程式.pdb
