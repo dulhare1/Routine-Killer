@@ -51,7 +51,7 @@ namespace RoutineKiller魯蛇殺手
             Win32Native.Methods.SetForegroundWindow(this.Handle);
         }
 
-        private void hotkey_Record_OnHotkey(object sender, HotKeyEventArgs e) //Alt + F2(record)
+        private void hotkey_Record_OnHotkey(object sender, HotKeyEventArgs e) //Alt + F1(record)
         {
             if (hotkey_Run_isWorking) { return; }
             hotkey_Record_isWorking = !hotkey_Record_isWorking; //按一次=true開始(+= new EventHandler),第二次=false關掉(-= new EventHandler)
@@ -131,13 +131,14 @@ namespace RoutineKiller魯蛇殺手
             {
                 MessageBox.Show("開始鍵盤精靈!\r\n本程式自動縮小。", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 //---------------------------//
+                ThreadPool.QueueUserWorkItem(new WaitCallback(simulateRecord), Int32.Parse(textBox1.Text)); //改為thread 使用abort關掉?
                 Thread.Sleep(50);
                 this.Hide();
                 this.nicon.Visible = true;
 
-                simulateRecord();
-                MessageBox.Show("完成!!!", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                nicon_Click(this.nicon, new EventArgs());
+                //simulateRecord();
+                
+               
             }
             else
             {
@@ -147,9 +148,9 @@ namespace RoutineKiller魯蛇殺手
             
         }
 
-        private void simulateRecord()
+        private void simulateRecord(object obj)
         {
-            int sleepTime = Int16.Parse(textBox1.Text);
+            int sleepTime = (int)(obj);
             int times = Int16.Parse(textBox2.Text);
             while (times != 0)
             {
@@ -180,10 +181,21 @@ namespace RoutineKiller魯蛇殺手
                 }
                 times--;
             }
+            MessageBox.Show("完成!!!", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            nicon_Click(this.nicon, new EventArgs());
         }
 
         private void hotkey_Stop_OnHotkey(object sender, HotKeyEventArgs e) //(Alt+Esc)Can not shut down!??
-        { stopSimulate = true; this.Close(); System.Environment.Exit(System.Environment.ExitCode); }
+        {
+            
+            stopSimulate = !stopSimulate;
+            if (stopSimulate) { nicon_Click(this.nicon, new EventArgs());
+            Application.ExitThread();
+            System.Environment.Exit(System.Environment.ExitCode); 
+            }
+       
+        }
 
         private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
         {
