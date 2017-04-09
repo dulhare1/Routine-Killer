@@ -15,7 +15,7 @@ namespace RoutineKiller魯蛇殺手
     {
         public Form1()
         {
-            InitializeComponent();
+            InitializeComponent();           
         }
         GlobalHotKey hotkey_Record, hotkey_Run, hotkey_Stop;
 
@@ -23,11 +23,11 @@ namespace RoutineKiller魯蛇殺手
         Point CursorPos = new Point();
         List<object> ClickPriotity = new List<object>();
 
-        //NotifyIcon nicon = new NotifyIcon();
         bool hotkey_Record_isWorking = false;
         bool hotkey_Run_isWorking = false;
-        bool stopSimulate = false;
 
+        CancellationTokenSource cts_run = new CancellationTokenSource();
+        
         private void Form1_Load(object sender, EventArgs e)
         {
             screenFactor = ScreenAndMouse.ScreenAndMouseDefault.getScalingFactor();
@@ -43,26 +43,37 @@ namespace RoutineKiller魯蛇殺手
             
             nicon.Text = "QuickMacro";
             nicon.Click += new EventHandler(nicon_Click);
+            
+           
+        }
+        delegate void formCallback(Form1 form);
+        private void showForm(Form1 form)
+        {
+            if (this.InvokeRequired)
+            {
+                formCallback d = new formCallback(showForm);
+                this.Invoke(d, new object[] { form });
+            }
+            else { form.Show();  }
         }
         void nicon_Click(object sender, EventArgs e)
         {
             nicon.Visible = false;
-            this.Show();
-            Win32Native.Methods.SetForegroundWindow(this.Handle);
+            showForm(this);
+           // Win32Native.Methods.SetForegroundWindow(this.Handle); intptr??
         }
 
         private void hotkey_Record_OnHotkey(object sender, HotKeyEventArgs e) //Alt + F1(record)
-        {
+        { 
             if (hotkey_Run_isWorking) { return; }
             hotkey_Record_isWorking = !hotkey_Record_isWorking; //按一次=true開始(+= new EventHandler),第二次=false關掉(-= new EventHandler)
             if (hotkey_Record_isWorking==true)
             {
                 ClickPriotity.RemoveAll(it => true);
                 MessageBox.Show("開始錄製動作!\r\n本程式自動縮小。", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
+                
                 //--開始監聽keyboard & mouse
-                startMouseHook();
-                startKeyboardHook();
+                startHook();
                 //---------------------------//
                 Thread.Sleep(50);
                 this.Hide();
@@ -77,15 +88,13 @@ namespace RoutineKiller魯蛇殺手
             }
         }
 
-        private void startMouseHook()
+        private void startHook()
         {
             WindwosHook.MouseHook.Enabled = true;
             WindwosHook.MouseHook.GlobalMouseDown += new EventHandler<WindwosHook.MouseHook.MouseEventArgs>(mouseHook_GlobalMouseDown);
-        }
-        private void startKeyboardHook()
-        {
+
             WindwosHook.KeyboardHook.Enabled = true;
-            WindwosHook.KeyboardHook.GlobalKeyDown += new EventHandler<WindwosHook.KeyboardHook.KeyEventArgs>(keyboardHook_GlobalKeyDown);            
+            WindwosHook.KeyboardHook.GlobalKeyDown += new EventHandler<WindwosHook.KeyboardHook.KeyEventArgs>(keyboardHook_GlobalKeyDown);
         }
 
         private void mouseHook_GlobalMouseDown(object sender, WindwosHook.MouseHook.MouseEventArgs e)
@@ -103,54 +112,31 @@ namespace RoutineKiller魯蛇殺手
 
 
         private void hotkey_Run_OnHotkey(object sender, HotKeyEventArgs e) //Alt + F2(run)
-        {       
-            if (hotkey_Record_isWorking) 
-            { 
-                MessageBox.Show("尚未終止錄製!\r\n請重新開啟程式錄製!!", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                System.Environment.Exit(System.Environment.ExitCode); //Can't Return!??
-                
-            }
-            if (textBox1.TextLength == 0) 
-            {
-                MessageBox.Show("請輸入執行間隔時間!", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-            if (ClickPriotity.Count == 0)
-            {
-                MessageBox.Show("請先錄製動作!", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-            if(textBox2.TextLength==0)
-            {
-                MessageBox.Show("請輸入重複次數!", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
+        {
+            trtBug();
 
             hotkey_Run_isWorking = !hotkey_Run_isWorking; //按一次=true開始(+= new EventHandler),第二次=false關掉(-= new EventHandler)         
             if (hotkey_Run_isWorking)
             {
                 MessageBox.Show("開始鍵盤精靈!\r\n本程式自動縮小。", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 //---------------------------//
-                ThreadPool.QueueUserWorkItem(new WaitCallback(simulateRecord), Int32.Parse(textBox1.Text)); //改為thread 使用abort關掉?
+                cts_run = new CancellationTokenSource();
+                Task tRun = Task.Factory.StartNew(simulateRecord, cts_run.Token);
                 Thread.Sleep(50);
                 this.Hide();
-                this.nicon.Visible = true;
-
-                //simulateRecord();
-                
-               
+                this.nicon.Visible = true;          
             }
             else
             {
+                cts_run.Cancel();
+                MessageBox.Show("終止!\r\n請重新開始!!", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 nicon_Click(this.nicon, new EventArgs());
             }
-            
-            
         }
 
-        private void simulateRecord(object obj)
+        private void simulateRecord()
         {
-            int sleepTime = (int)(obj);
+            int sleepTime = Int16.Parse(textBox1.Text);
             int times = Int16.Parse(textBox2.Text);
             while (times != 0)
             {
@@ -158,8 +144,8 @@ namespace RoutineKiller魯蛇殺手
                 {
                     Thread.Sleep(sleepTime);
 
-                    if (stopSimulate == true) //(Alt+Esc)Can't shut down!???
-                        break;
+                    if (cts_run.IsCancellationRequested) 
+                        return;
 
                     if (Object.ReferenceEquals(ClickPriotity[i + 1].GetType(), CursorPos.GetType()))
                     {
@@ -181,20 +167,59 @@ namespace RoutineKiller魯蛇殺手
                 }
                 times--;
             }
+            hotkey_Run_isWorking = false;
             MessageBox.Show("完成!!!", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
             nicon_Click(this.nicon, new EventArgs());
         }
 
-        private void hotkey_Stop_OnHotkey(object sender, HotKeyEventArgs e) //(Alt+Esc)Can not shut down!??
+        private void hotkey_Stop_OnHotkey(object sender, HotKeyEventArgs e)
         {
-            
-            stopSimulate = !stopSimulate;
-            if (stopSimulate) { nicon_Click(this.nicon, new EventArgs());
-            Application.ExitThread();
-            System.Environment.Exit(System.Environment.ExitCode); 
+            if (hotkey_Record_isWorking)
+            {
+                hotkey_Record_isWorking = false;
+                MessageBox.Show("終止!\r\n請重新開使!!", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                nicon_Click(this.nicon, new EventArgs());
+                WindwosHook.MouseHook.GlobalMouseDown -= new EventHandler<WindwosHook.MouseHook.MouseEventArgs>(mouseHook_GlobalMouseDown);
+                WindwosHook.KeyboardHook.GlobalKeyDown -= new EventHandler<WindwosHook.KeyboardHook.KeyEventArgs>(keyboardHook_GlobalKeyDown);
+                ClickPriotity.RemoveAll(it => true);
+                return;
             }
-       
+            else if (hotkey_Run_isWorking)
+            {
+                cts_run.Cancel();
+                hotkey_Run_isWorking = false;
+                MessageBox.Show("終止!\r\n請重新開始!!", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                nicon_Click(this.nicon, new EventArgs());
+            }
+        }
+
+        private void trtBug()
+        {
+            if (hotkey_Record_isWorking)
+            {
+                hotkey_Record_isWorking = false;
+                MessageBox.Show("尚未終止錄製!\r\n請重新開啟程式錄製!!", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                nicon_Click(this.nicon, new EventArgs());
+                WindwosHook.MouseHook.GlobalMouseDown -= new EventHandler<WindwosHook.MouseHook.MouseEventArgs>(mouseHook_GlobalMouseDown);
+                WindwosHook.KeyboardHook.GlobalKeyDown -= new EventHandler<WindwosHook.KeyboardHook.KeyEventArgs>(keyboardHook_GlobalKeyDown);
+                ClickPriotity.RemoveAll(it => true);
+                return;
+            }
+            if (textBox1.TextLength == 0)
+            {
+                MessageBox.Show("請輸入執行間隔時間!", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            if (ClickPriotity.Count == 0)
+            {
+                MessageBox.Show("請先錄製動作!", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            if (textBox2.TextLength == 0)
+            {
+                MessageBox.Show("請輸入重複次數!", "提醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
         }
 
         private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
