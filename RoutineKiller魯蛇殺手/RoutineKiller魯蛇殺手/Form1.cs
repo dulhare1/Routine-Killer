@@ -30,6 +30,7 @@ namespace RoutineKiller魯蛇殺手
         
         private void Form1_Load(object sender, EventArgs e)
         {
+            //hScrollBar1.Value = 2000;
             screenFactor = ScreenAndMouse.ScreenAndMouseDefault.getScalingFactor();
 
             hotkey_Stop = new GlobalHotKey(this.Handle, Keys.Escape,Keys.Alt);//註冊Alt+ESC為熱鍵(play)
@@ -231,6 +232,11 @@ namespace RoutineKiller魯蛇殺手
         {
             if ((int)e.KeyChar < 48 | (int)e.KeyChar > 57 && (int)e.KeyChar != 8)
             { e.Handled = true; }
+        }
+
+        private void hScrollBar1_ValueChanged(object sender, EventArgs e)
+        {
+            textBox1.Text = this.hScrollBar1.Value.ToString();
         }
 
     }
